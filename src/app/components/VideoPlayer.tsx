@@ -303,7 +303,7 @@ export default function VideoPlayer({
 
                     {/* Left draggable handle */}
                     <div
-                        className={`absolute top-2 w-1.5 lg:w-1 h-6 bg-gray-600 rounded cursor-ew-resize transform -translate-y-1/8 -translate-x-1`}
+                        className={`absolute top-2 w-3 lg:w-1 h-6 bg-gray-600 rounded cursor-ew-resize transform -translate-y-1/8 -translate-x-1`}
                         style={{ left: `${trimStart}%` }}
                         onMouseDown={(e) => handleDragStart('left', e)}
                         onTouchStart={(e) => handleDragStart('left', e)}
@@ -311,7 +311,7 @@ export default function VideoPlayer({
 
                     {/* Right draggable handle */}
                     <div
-                        className={`absolute top-2 w-1.5 lg:w-1 h-6 bg-gray-600 rounded cursor-ew-resize -translate-y-1/8`}
+                        className={`absolute top-2 w-3 lg:w-1 h-6 bg-gray-600 rounded cursor-ew-resize -translate-y-1/8`}
                         style={{
                             left: `${trimEnd}%`,
                         }}
