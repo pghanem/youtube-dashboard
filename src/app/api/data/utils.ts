@@ -11,14 +11,11 @@ export async function getVideosData(page = 1, limit = PAGE_SIZE) {
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
 
-    const response = await fetch(
-        new URL(
-            '/data/videos.json',
-            process.env.NODE_ENV === 'development'
-                ? 'http://localhost:3000'
-                : process.env.VERCEL_URL || 'http://localhost:3000',
-        ),
-    );
+    const baseUrl = process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3000'
+        : `https://${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_VERCEL_URL}`;
+
+    const response = await fetch(`${baseUrl}/data/videos.json`);
 
     if (!response.ok) {
         throw new Error(`Failed to fetch JSON: ${response.status}`);
