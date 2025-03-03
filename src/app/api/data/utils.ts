@@ -1,4 +1,4 @@
-export const PAGE_SIZE = 5;
+export const PAGE_SIZE = 10;
 
 /**
  * getVideosData - Fetches video data with pagination.
