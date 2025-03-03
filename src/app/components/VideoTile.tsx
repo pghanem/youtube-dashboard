@@ -28,7 +28,7 @@ export default function VideoTile({
         <div
             className={`p-4 my-4 rounded-lg border-gray-200 cursor-pointer flex gap-4 ${
                 isSelected
-                    ? 'bg-blue-50 hover:bg-blue-100'
+                    ? 'bg-blue-100 hover:bg-blue-200'
                     : 'hover:bg-gray-200'
             }`}
             onClick={() => onSelect(video)}
