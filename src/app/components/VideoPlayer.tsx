@@ -1,7 +1,7 @@
 'use client';
 
 import { YouTubeVideoResult } from '@/types/videoTypes';
-import { JSX, useCallback, useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { YouTubeEvent, YouTubePlayer } from '@/types/youtube';
 
 interface VideoPlayerProps {
@@ -30,63 +30,66 @@ export default function VideoPlayer({
     const [videoId, setVideoId] = useState<string | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // TODO: simplify a lot of this - separate into smaller functions where possible. Look into state and hook dependency optimizations.
-
-    const onPlayerReady = useCallback(() => {
-        if (!playerRef.current) return;
-        setVideoDuration(playerRef.current.getDuration());
-        setIsPlaying(
-            playerRef.current.getPlayerState() ===
-                window.YT.PlayerState.PLAYING,
-        );
-
-        // Update current time every 200ms
-        intervalRef.current = setInterval(() => {
-            if (playerRef.current) {
-                const time = playerRef.current.getCurrentTime();
-                setCurrentTime(time);
-
-                const trimStartTime =
-                    (trimStart / 100) * playerRef.current.getDuration();
-                const trimEndTime =
-                    (trimEnd / 100) * playerRef.current.getDuration();
-
-                // If video reaches the trim end or is before trim start, go to trim start
-                if (
-                    (time >= trimEndTime || time < trimStartTime) &&
-                    isPlaying
-                ) {
-                    playerRef.current.seekTo(trimStartTime);
-                }
-            }
-        }, 200);
-    }, [isPlaying, trimStart, trimEnd]);
-
-    const initializePlayer = useCallback(() => {
-        if (!selectedVideo || !playerContainerRef.current) return;
-
-        if (playerRef.current) {
-            playerRef.current.destroy();
-        }
-
-        playerRef.current = new window.YT.Player(playerContainerRef.current, {
-            videoId: selectedVideo.id.videoId,
-            playerVars: {
-                controls: 0,
-                disablekb: 1,
-                rel: 0,
-                modestbranding: 1,
-                showinfo: 0,
-            },
-            events: {
-                onReady: onPlayerReady,
-                onStateChange: onPlayerStateChange,
-            },
-        });
-    }, [selectedVideo, onPlayerReady]);
+    // TODO: Likely more to optimize here. Look into state and hook dependency optimizations.
 
     useEffect(() => {
         if (!selectedVideo) return;
+
+        const initializePlayer = () => {
+            if (!selectedVideo || !playerContainerRef.current) return;
+
+            if (playerRef.current) {
+                playerRef.current.destroy();
+            }
+
+            playerRef.current = new window.YT.Player(
+                playerContainerRef.current,
+                {
+                    videoId: selectedVideo.id.videoId,
+                    playerVars: {
+                        controls: 0,
+                        disablekb: 1,
+                        rel: 0,
+                        modestbranding: 1,
+                        showinfo: 0,
+                    },
+                    events: {
+                        onReady: onPlayerReady,
+                        onStateChange: onPlayerStateChange,
+                    },
+                },
+            );
+        };
+
+        const onPlayerReady = () => {
+            if (!playerRef.current) return;
+            setVideoDuration(playerRef.current.getDuration());
+            setIsPlaying(
+                playerRef.current.getPlayerState() ===
+                    window.YT.PlayerState.PLAYING,
+            );
+
+            // Update current time every 200ms
+            intervalRef.current = setInterval(() => {
+                if (playerRef.current) {
+                    const time = playerRef.current.getCurrentTime();
+                    setCurrentTime(time);
+
+                    const trimStartTime =
+                        (trimStart / 100) * playerRef.current.getDuration();
+                    const trimEndTime =
+                        (trimEnd / 100) * playerRef.current.getDuration();
+
+                    // If video reaches the trim end or is before trim start, go to trim start
+                    if (
+                        (time >= trimEndTime || time < trimStartTime) &&
+                        isPlaying
+                    ) {
+                        playerRef.current.seekTo(trimStartTime);
+                    }
+                }
+            }, 200);
+        };
 
         const newVideoId = selectedVideo.id.videoId;
         setVideoId(newVideoId);
@@ -123,7 +126,7 @@ export default function VideoPlayer({
                 intervalRef.current = null;
             }
         };
-    }, [selectedVideo, initializePlayer]);
+    }, [selectedVideo]);
 
     const onPlayerStateChange = (event: YouTubeEvent) => {
         setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
