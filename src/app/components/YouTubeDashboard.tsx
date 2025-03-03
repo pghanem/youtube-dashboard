@@ -120,6 +120,7 @@ export default function YouTubeDashboard(): JSX.Element {
                             onVideoSelect={handleVideoSelect}
                             loading={isLoadingMoreVideos}
                             onLoadMore={handleLoadMore}
+                            hasMore={hasMore}
                         />
                     </div>
                 </div>

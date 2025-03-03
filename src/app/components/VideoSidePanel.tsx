@@ -11,6 +11,7 @@ interface VideoSidePanelProps {
     onVideoSelect: (video: YouTubeVideoResult) => void;
     loading?: boolean;
     onLoadMore: () => void;
+    hasMore: boolean;
 }
 
 /**
@@ -21,6 +22,7 @@ interface VideoSidePanelProps {
  * @param {(video: YouTubeVideoResult) => void} onVideoSelect - Callback function triggered when a video is selected.
  * @param {boolean} [loading=false] - Optional prop to indicate if the videos are still loading.
  * @param {() => void} [onLoadMore] - Callback function for loading more videos when paginating.
+ * @param {boolean} [hasMore] - Indicates whether there are any videos left to fetch.
  *
  * @returns {JSX.Element} - Returns the VideoSidePanel component, which includes a video list and search functionality.
  */
@@ -30,6 +32,7 @@ export default function VideoSidePanel({
     onVideoSelect,
     loading = false,
     onLoadMore,
+    hasMore,
 }: VideoSidePanelProps): JSX.Element {
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -58,7 +61,9 @@ export default function VideoSidePanel({
             <div className="px-3 py-2 text-sm text-gray-500 h-8 rounded-xl flex items-center shadow-md mb-2">
                 {searchTerm
                     ? `Found ${filteredVideos.length} results for "${searchTerm}"`
-                    : 'Scroll down to see more results.'}
+                    : hasMore
+                      ? 'Scroll down to see more results.'
+                      : 'No more results to display.'}
             </div>
             <VideoList
                 videos={filteredVideos}

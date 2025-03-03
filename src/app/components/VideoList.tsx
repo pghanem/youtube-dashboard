@@ -59,6 +59,21 @@ export default function VideoList({
         };
     }, [loading, onLoadMore]);
 
+    useEffect(() => {
+        const checkScroll = () => {
+            if (!videoListRef.current || loading) return;
+
+            const { scrollHeight, clientHeight } = videoListRef.current;
+
+            // If the list isn't scrollable due to no overflow, load more (happens with small page sizes)
+            if (scrollHeight <= clientHeight) {
+                onLoadMore();
+            }
+        };
+
+        checkScroll();
+    }, [videos, loading, onLoadMore]);
+
     return (
         <div ref={videoListRef} className="flex-1 overflow-y-auto">
             {videos.map((video: YouTubeVideoResult, index: number) => (
@@ -70,10 +85,10 @@ export default function VideoList({
                 />
             ))}
 
-            {(loading || videos.length === 0) &&
+            {(loading || (videos.length === 0 && !selectedVideo)) &&
                 Array.from({ length: PAGE_SIZE }).map((_, index) => (
                     <VideoTileSkeleton
-                        key={`skeleton-${index + videos.length}`}
+                        key={`skeleton-${index}-${videos.length}`}
                     />
                 ))}
         </div>

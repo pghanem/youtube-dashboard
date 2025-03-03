@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, JSX, useState } from 'react';
+import { ChangeEvent, JSX, useEffect, useState } from 'react';
 import Image from 'next/image';
 
 interface SearchInputProps {
@@ -20,10 +20,16 @@ export default function SearchInput({
 }: SearchInputProps): JSX.Element {
     const [searchInput, setSearchInput] = useState('');
 
+    useEffect(() => {
+        const delay = setTimeout(() => {
+            onSearch(searchInput);
+        }, 500);
+
+        return () => clearTimeout(delay);
+    }, [searchInput, onSearch]);
+
     const handleSearchChange = (event: ChangeEvent<HTMLInputElement>): void => {
-        const newValue = event.target.value;
-        setSearchInput(newValue);
-        onSearch(newValue);
+        setSearchInput(event.target.value);
     };
 
     return (
