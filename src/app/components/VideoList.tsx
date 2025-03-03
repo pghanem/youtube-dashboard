@@ -70,7 +70,7 @@ export default function VideoList({
                 />
             ))}
 
-            {loading &&
+            {(loading || videos.length === 0) &&
                 Array.from({ length: PAGE_SIZE }).map((_, index) => (
                     <VideoTileSkeleton
                         key={`skeleton-${index + videos.length}`}

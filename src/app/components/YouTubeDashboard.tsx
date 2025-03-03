@@ -8,11 +8,6 @@ import VideoPlayerSkeleton from '@/app/components/VideoPlayerSkeleton';
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
 import { PAGE_SIZE } from '@/app/api/data/utils';
 
-interface YouTubeDashboardProps {
-    initialVideos: YouTubeVideoResult[];
-    initialHasMore: boolean;
-}
-
 export const GlobalErrorFallback = ({ error }: { error: Error }) => {
     return (
         <div>
@@ -25,54 +20,45 @@ export const GlobalErrorFallback = ({ error }: { error: Error }) => {
 /**
  * YoutubeDashboard - This is the parent client side element for the YouTube Dashboard.
  *
- * @param {YouTubeVideoResult[]} initialVideos - The page number for pagination.
- * @param {boolean} initialHasMore - The number of items to fetch per page.
- *
  * @returns {JSX.Element} - Returns a YouTube Dashboard component.
  */
-export default function YouTubeDashboard({
-    initialVideos,
-    initialHasMore,
-}: YouTubeDashboardProps): JSX.Element {
-    const [videos, setVideos] =
-        useState<Array<YouTubeVideoResult>>(initialVideos);
-    const [selectedVideo, setSelectedVideo] =
-        useState<YouTubeVideoResult | null>(
-            initialVideos.length > 0 ? initialVideos[0] : null,
-        );
+export default function YouTubeDashboard(): JSX.Element {
+    const [videos, setVideos] = useState<Array<YouTubeVideoResult>>([]);
+    const [selectedVideo, setSelectedVideo] = useState<YouTubeVideoResult | null>(null);
     const [isLoadingMoreVideos, setIsLoadingMoreVideos] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(initialHasMore);
+    const [hasMore, setHasMore] = useState(true);
 
     const videoPlayerContainerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const fetchMoreVideos = async () => {
-            if (page > 1) {
-                // Only fetch if page > 1 (initial data already loaded)
-                setIsLoadingMoreVideos(true);
-                setError(null);
-                try {
-                    const response = await fetch(
-                        `/api/data?page=${page}&limit=${PAGE_SIZE}`,
-                    );
+            setIsLoadingMoreVideos(true);
+            try {
+                const response = await fetch(
+                    `/api/data?page=${page}&limit=${PAGE_SIZE}`,
+                );
 
-                    if (!response.ok) {
-                        throw new Error(`API error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    setVideos((prev) => [...prev, ...data.items]);
-                    setHasMore(data.pagination.hasNextPage);
-                } catch (error) {
-                    console.error('Error fetching more videos:', error);
-                    setError(
-                        'Failed to load more videos. Please try again later.',
-                    );
-                } finally {
-                    setIsLoadingMoreVideos(false);
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
                 }
+
+                const data = await response.json();
+
+                if (data.items && data.items.length > 0 && !selectedVideo) {
+                    setSelectedVideo(data.items[0]);
+                }
+
+                setVideos((prev) => [...prev, ...data.items]);
+                setHasMore(data.pagination.hasNextPage);
+            } catch (error) {
+                console.error('Error fetching more videos:', error);
+                setError(
+                    'Failed to load more videos. Please try again later.',
+                );
+            } finally {
+                setIsLoadingMoreVideos(false);
             }
         };
         fetchMoreVideos();
@@ -116,7 +102,7 @@ export default function YouTubeDashboard({
                     >
                         <div className="flex h-full items-center">
                             <div className="flex-grow">
-                                {isLoadingMoreVideos && videos.length === 0 ? (
+                                {videos.length === 0 ? (
                                     <VideoPlayerSkeleton />
                                 ) : (
                                     selectedVideo && (
