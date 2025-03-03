@@ -1,7 +1,7 @@
 'use client';
 
 import { YouTubeVideoResult } from '@/types/videoTypes';
-import { JSX, useEffect, useRef, useState } from 'react';
+import React, { JSX, useEffect, useRef, useState } from 'react';
 import { YouTubeEvent, YouTubePlayer } from '@/types/youtube';
 
 interface VideoPlayerProps {
@@ -155,19 +155,29 @@ export default function VideoPlayer({
         }
     };
 
-    const handleDragStart = (handle: 'left' | 'right', e: React.MouseEvent) => {
+    const handleDragStart = (
+        handle: 'left' | 'right',
+        e: React.MouseEvent | React.TouchEvent,
+    ) => {
         e.preventDefault();
         setIsDragging(handle);
     };
 
     useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
+        const handleMouseMove = (e: MouseEvent | TouchEvent) => {
             if (!isDragging || !sliderRef.current) return;
 
             const sliderRect = sliderRef.current.getBoundingClientRect();
             const sliderWidth = sliderRect.width;
-            let newPosition =
-                ((e.clientX - sliderRect.left) / sliderWidth) * 100;
+            let clientX;
+
+            if ('touches' in e) {
+                clientX = e.touches[0].clientX;
+            } else {
+                clientX = e.clientX;
+            }
+
+            let newPosition = ((clientX - sliderRect.left) / sliderWidth) * 100;
 
             // Constrain to valid range (0-100)
             newPosition = Math.max(0, Math.min(100, newPosition));
@@ -212,11 +222,17 @@ export default function VideoPlayer({
         if (isDragging) {
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
+            document.addEventListener('touchmove', handleMouseMove, {
+                passive: false,
+            });
+            document.addEventListener('touchend', handleMouseUp);
         }
 
         return () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('touchmove', handleMouseMove);
+            document.removeEventListener('touchend', handleMouseUp);
         };
     }, [isDragging, trimStart, trimEnd, videoId, isPlaying]);
 
@@ -277,7 +293,7 @@ export default function VideoPlayer({
 
                         {/* Indicator for current video position */}
                         <div
-                            className="absolute w-3 h-3 bg-red-500 rounded-full transform -translate-x-1/2 -translate-y-1/2"
+                            className="absolute w-1 h-5 rounded bg-red-500 transform -translate-x-1/2 -translate-y-1/2 z-10"
                             style={{
                                 left: `${(currentTime / videoDuration) * 100}%`,
                                 top: '50%',
@@ -287,18 +303,20 @@ export default function VideoPlayer({
 
                     {/* Left draggable handle */}
                     <div
-                        className={`absolute top-2 w-1 h-6 bg-gray-600 rounded cursor-ew-resize transform -translate-y-1/8 -translate-x-1`}
+                        className={`absolute top-2 w-1.5 lg:w-1 h-6 bg-gray-600 rounded cursor-ew-resize transform -translate-y-1/8 -translate-x-1`}
                         style={{ left: `${trimStart}%` }}
                         onMouseDown={(e) => handleDragStart('left', e)}
+                        onTouchStart={(e) => handleDragStart('left', e)}
                     ></div>
 
                     {/* Right draggable handle */}
                     <div
-                        className={`absolute top-2 w-1 h-6 bg-gray-600 rounded cursor-ew-resize -translate-y-1/8`}
+                        className={`absolute top-2 w-1.5 lg:w-1 h-6 bg-gray-600 rounded cursor-ew-resize -translate-y-1/8`}
                         style={{
                             left: `${trimEnd}%`,
                         }}
                         onMouseDown={(e) => handleDragStart('right', e)}
+                        onTouchStart={(e) => handleDragStart('right', e)}
                     ></div>
                 </div>
 
