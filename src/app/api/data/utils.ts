@@ -11,17 +11,8 @@ export async function getVideosData(page = 1, limit = PAGE_SIZE) {
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
 
-    const baseUrl = process.env.NODE_ENV === 'development'
-        ? 'http://localhost:3000'
-        : `https://${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_VERCEL_URL}`;
-
-    const response = await fetch(`${baseUrl}/data/videos.json`);
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch JSON: ${response.status}`);
-    }
-
-    const allData = await response.json();
+    // Get the JSON data using the appropriate method for the environment
+    const allData = await loadVideosData();
 
     return {
         items: allData.items.slice(startIndex, endIndex),
@@ -34,4 +25,32 @@ export async function getVideosData(page = 1, limit = PAGE_SIZE) {
             hasPrevPage: page > 1,
         },
     };
+}
+
+/**
+ * Helper function to load the videos data using the appropriate method for the environment
+ */
+async function loadVideosData() {
+    let videos;
+
+    try {
+        if (process.env.NODE_ENV === 'development') {
+            const response = await fetch(
+                'http://localhost:3000/data/videos.json',
+            );
+            if (!response.ok) {
+                throw new Error(`Failed to fetch JSON: ${response.status}`);
+            }
+            videos = await response.json();
+        } else {
+            videos = await import('../../../../data/videos.json').then(
+                (module) => module.default,
+            );
+        }
+
+        return videos;
+    } catch (error) {
+        console.error('Error loading videos data:', error);
+        throw new Error('Failed to load videos data');
+    }
 }

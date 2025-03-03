@@ -24,7 +24,8 @@ export const GlobalErrorFallback = ({ error }: { error: Error }) => {
  */
 export default function YouTubeDashboard(): JSX.Element {
     const [videos, setVideos] = useState<Array<YouTubeVideoResult>>([]);
-    const [selectedVideo, setSelectedVideo] = useState<YouTubeVideoResult | null>(null);
+    const [selectedVideo, setSelectedVideo] =
+        useState<YouTubeVideoResult | null>(null);
     const [isLoadingMoreVideos, setIsLoadingMoreVideos] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
@@ -54,9 +55,7 @@ export default function YouTubeDashboard(): JSX.Element {
                 setHasMore(data.pagination.hasNextPage);
             } catch (error) {
                 console.error('Error fetching more videos:', error);
-                setError(
-                    'Failed to load more videos. Please try again later.',
-                );
+                setError('Failed to load more videos. Please try again later.');
             } finally {
                 setIsLoadingMoreVideos(false);
             }
