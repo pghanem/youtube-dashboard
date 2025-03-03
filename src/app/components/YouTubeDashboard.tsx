@@ -30,8 +30,16 @@ export default function YouTubeDashboard(): JSX.Element {
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const isFirstRender = useRef(true);
 
     const videoPlayerContainerRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (isFirstRender.current && videos.length > 0) {
+            setSelectedVideo(videos[0]);
+            isFirstRender.current = false;
+        }
+    }, [videos]);
 
     useEffect(() => {
         const fetchMoreVideos = async () => {
@@ -46,11 +54,6 @@ export default function YouTubeDashboard(): JSX.Element {
                 }
 
                 const data = await response.json();
-
-                if (data.items && data.items.length > 0 && !selectedVideo) {
-                    setSelectedVideo(data.items[0]);
-                }
-
                 setVideos((prev) => [...prev, ...data.items]);
                 setHasMore(data.pagination.hasNextPage);
             } catch (error) {
