@@ -105,7 +105,7 @@ export default function VideoPlayer({
         if (!selectedVideo || !playerReady || !playerInstance.current) return;
 
         const newVideoId = selectedVideo.id.videoId;
-        if (newVideoId !== videoId) {
+        if (newVideoId && newVideoId !== videoId) {
             // Mark as loading to hide the time indicator
             setIsVideoLoading(true);
 

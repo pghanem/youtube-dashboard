@@ -31,7 +31,15 @@ export default function VideoTile({
                     ? 'bg-blue-100 hover:bg-blue-200'
                     : 'hover:bg-gray-200'
             }`}
-            onClick={() => onSelect(video)}
+            onClick={
+                video.id.channelId
+                    ? () =>
+                          window.open(
+                              `https://www.youtube.com/channel/${video.id.channelId}`,
+                              '_blank',
+                          )
+                    : () => onSelect(video)
+            }
         >
             <div
                 className="relative overflow-hidden rounded-lg object-cover"

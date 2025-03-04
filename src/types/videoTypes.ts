@@ -15,7 +15,8 @@ export interface YouTubeVideoResult {
     etag: string;
     id: {
         kind: string;
-        videoId: string;
+        videoId?: string;
+        channelId?: string;
     };
     snippet: {
         publishedAt: string;
