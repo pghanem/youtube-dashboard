@@ -2,7 +2,12 @@
 
 import { YouTubeVideoResult } from '@/types/videoTypes';
 import React, { JSX, useEffect, useRef, useState } from 'react';
-import { YouTubeEvent, YouTubePlayer } from '@/types/youtube';
+
+declare global {
+    interface Window {
+        onYouTubeIframeAPIReady: () => void;
+    }
+}
 
 interface VideoPlayerProps {
     selectedVideo: YouTubeVideoResult | null;
@@ -18,7 +23,7 @@ interface VideoPlayerProps {
 export default function VideoPlayer({
     selectedVideo,
 }: VideoPlayerProps): JSX.Element {
-    const playerRef = useRef<YouTubePlayer>(null);
+    const playerInstance = useRef<YT.Player | null>(null);
     const playerContainerRef = useRef<HTMLDivElement>(null);
     const sliderRef = useRef<HTMLDivElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -29,23 +34,19 @@ export default function VideoPlayer({
     const [isDragging, setIsDragging] = useState<'left' | 'right' | null>(null);
     const [videoId, setVideoId] = useState<string | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [playerReady, setPlayerReady] = useState(false);
 
-    // TODO: Likely more to optimize here. Look into state and hook dependency optimizations.
-
+    // Initialize YouTube Player once
     useEffect(() => {
-        if (!selectedVideo) return;
+        if (!playerContainerRef.current) return;
 
         const initializePlayer = () => {
-            if (!selectedVideo || !playerContainerRef.current) return;
+            if (playerInstance.current || !playerContainerRef.current) return;
 
-            if (playerRef.current) {
-                playerRef.current.destroy();
-            }
-
-            playerRef.current = new window.YT.Player(
+            playerInstance.current = new window.YT.Player(
                 playerContainerRef.current,
                 {
-                    videoId: selectedVideo.id.videoId,
+                    videoId: selectedVideo?.id.videoId || '',
                     playerVars: {
                         controls: 0,
                         disablekb: 1,
@@ -54,57 +55,15 @@ export default function VideoPlayer({
                         showinfo: 0,
                     },
                     events: {
-                        onReady: onPlayerReady,
+                        onReady: () => {
+                            setPlayerReady(true);
+                            onPlayerReady();
+                        },
                         onStateChange: onPlayerStateChange,
                     },
                 },
             );
         };
-
-        const onPlayerReady = () => {
-            if (!playerRef.current) return;
-            setVideoDuration(playerRef.current.getDuration());
-            setIsPlaying(
-                playerRef.current.getPlayerState() ===
-                    window.YT.PlayerState.PLAYING,
-            );
-
-            // Update current time every 200ms
-            intervalRef.current = setInterval(() => {
-                if (playerRef.current) {
-                    const time = playerRef.current.getCurrentTime();
-                    setCurrentTime(time);
-
-                    const trimStartTime =
-                        (trimStart / 100) * playerRef.current.getDuration();
-                    const trimEndTime =
-                        (trimEnd / 100) * playerRef.current.getDuration();
-
-                    // If video reaches the trim end or is before trim start, go to trim start
-                    if (
-                        (time >= trimEndTime || time < trimStartTime) &&
-                        isPlaying
-                    ) {
-                        playerRef.current.seekTo(trimStartTime);
-                    }
-                }
-            }, 200);
-        };
-
-        const newVideoId = selectedVideo.id.videoId;
-        setVideoId(newVideoId);
-
-        // Load saved trim values from localStorage
-        const savedTrim = localStorage.getItem(`yt-trim-${newVideoId}`);
-        if (savedTrim) {
-            const { start, end } = JSON.parse(savedTrim);
-            setTrimStart(start);
-            setTrimEnd(end);
-        } else {
-            // Reset trim values for new video
-            setTrimStart(0);
-            setTrimEnd(100);
-        }
 
         if (!window.YT) {
             const tag = document.createElement('script');
@@ -118,40 +77,116 @@ export default function VideoPlayer({
         }
 
         return () => {
-            if (playerRef.current) {
-                playerRef.current.destroy();
-            }
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
                 intervalRef.current = null;
             }
-        };
-    }, [selectedVideo]);
 
-    const onPlayerStateChange = (event: YouTubeEvent) => {
+            // Clean up player on component unmount
+            if (playerInstance.current) {
+                playerInstance.current.destroy();
+                playerInstance.current = null;
+            }
+        };
+    }, []);
+
+    // Handle selected video changes
+    useEffect(() => {
+        if (!selectedVideo || !playerReady || !playerInstance.current) return;
+
+        const newVideoId = selectedVideo.id.videoId;
+
+        if (newVideoId !== videoId) {
+            setVideoId(newVideoId);
+
+            // Load saved trim values from localStorage
+            const savedTrim = localStorage.getItem(`yt-trim-${newVideoId}`);
+            if (savedTrim) {
+                const { start, end } = JSON.parse(savedTrim);
+                setTrimStart(start);
+                setTrimEnd(end);
+            } else {
+                // Reset trim values for new video
+                setTrimStart(0);
+                setTrimEnd(100);
+            }
+
+            // Use cueVideoById instead of destroying and recreating the player
+            playerInstance.current.cueVideoById(newVideoId);
+
+            // Update the duration after delay to ensure the video has loaded
+            setTimeout(() => {
+                if (playerInstance.current) {
+                    setVideoDuration(playerInstance.current.getDuration());
+                }
+            }, 500);
+        }
+    }, [selectedVideo, playerReady, videoId]);
+
+    const onPlayerReady = () => {
+        if (!playerInstance.current) return;
+
+        setVideoDuration(playerInstance.current.getDuration());
+        setIsPlaying(
+            playerInstance.current.getPlayerState() ===
+                window.YT.PlayerState.PLAYING,
+        );
+
+        // Update current time every 200ms
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+        }
+
+        intervalRef.current = setInterval(() => {
+            if (playerInstance.current) {
+                const time = playerInstance.current.getCurrentTime();
+                setCurrentTime(time);
+
+                const trimStartTime =
+                    (trimStart / 100) * playerInstance.current.getDuration();
+                const trimEndTime =
+                    (trimEnd / 100) * playerInstance.current.getDuration();
+
+                // If video reaches the trim end or is before trim start, go to trim start
+                if (
+                    (time >= trimEndTime || time < trimStartTime) &&
+                    isPlaying
+                ) {
+                    playerInstance.current.seekTo(trimStartTime, true);
+                }
+            }
+        }, 200);
+    };
+
+    const onPlayerStateChange = (event: YT.OnStateChangeEvent) => {
         setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
+
+        // If the video has just started playing, update the duration
+        if (event.data === window.YT.PlayerState.PLAYING) {
+            setVideoDuration(playerInstance.current?.getDuration() || 0);
+        }
     };
 
     const togglePlayPause = () => {
-        if (!playerRef.current) return;
+        if (!playerInstance.current) return;
 
         if (isPlaying) {
-            playerRef.current.pauseVideo();
+            playerInstance.current.pauseVideo();
         } else {
             const trimStartTime =
-                (trimStart / 100) * playerRef.current.getDuration();
+                (trimStart / 100) * playerInstance.current.getDuration();
             const trimEndTime =
-                (trimEnd / 100) * playerRef.current.getDuration();
-            const currentPosition = playerRef.current.getCurrentTime();
+                (trimEnd / 100) * playerInstance.current.getDuration();
+            const currentPosition = playerInstance.current.getCurrentTime();
 
             if (
                 currentPosition < trimStartTime ||
                 currentPosition >= trimEndTime
             ) {
-                playerRef.current.seekTo(trimStartTime);
+                playerInstance.current.seekTo(trimStartTime, true);
             }
 
-            playerRef.current.playVideo();
+            playerInstance.current.playVideo();
         }
     };
 
@@ -201,21 +236,27 @@ export default function VideoPlayer({
                     }),
                 );
 
-                if (isPlaying && playerRef.current) {
+                if (isPlaying && playerInstance.current) {
                     const trimStartTime =
-                        (trimStart / 100) * playerRef.current.getDuration();
+                        (trimStart / 100) *
+                        playerInstance.current.getDuration();
                     const trimEndTime =
-                        (trimEnd / 100) * playerRef.current.getDuration();
-                    const currentPosition = playerRef.current.getCurrentTime();
+                        (trimEnd / 100) * playerInstance.current.getDuration();
+                    const currentPosition =
+                        playerInstance.current.getCurrentTime();
 
                     if (
                         currentPosition < trimStartTime ||
                         currentPosition > trimEndTime
                     ) {
-                        playerRef.current.seekTo(trimStartTime);
+                        playerInstance.current.seekTo(trimStartTime, true);
                     }
                 }
             }
+            // TODO: consider cue-ing video with start/end to get it to start/stop
+            // if (playerInstance.current) {
+            //     playerInstance.current.cueVideoById({videoId: selectedVideo?.id.videoId, startSeconds: (trimStart / 100) * videoDuration, endSeconds: (trimEnd / 100) * videoDuration});
+            // }
             setIsDragging(null);
         };
 
