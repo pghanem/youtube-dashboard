@@ -335,7 +335,7 @@ export default function VideoPlayer({
             <div className="bg-gray-100 p-3 rounded-b-lg border-t border-gray-200">
                 {/* Video title */}
                 <div className="min-w-0 p-2 font-bold text-lg">
-                    {selectedVideo.snippet.title ?? ''}
+                    {selectedVideo.snippet.title.replace(/&#39;/g, "'") ?? ''}
                 </div>
                 {/* Play or Pause */}
                 <div className="flex items-center mb-3">
