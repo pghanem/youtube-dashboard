@@ -165,6 +165,9 @@ export default function VideoPlayer({
         if (event.data === window.YT.PlayerState.PLAYING) {
             setVideoDuration(playerInstance.current?.getDuration() || 0);
         }
+        if (event.data === window.YT.PlayerState.ENDED) {
+            setCurrentTime(videoDuration);
+        }
     };
 
     const togglePlayPause = () => {
