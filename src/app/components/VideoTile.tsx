@@ -56,9 +56,10 @@ export default function VideoTile({
                     unoptimized
                 />
             </div>
+            {/* Instead of a full decode, only replacing the apostrophes since that's the only one encoded */}
             <div className="flex-1">
                 <p className="font-semibold text-gray-800">
-                    {video.snippet.title}
+                    {video.snippet.title.replace(/&#39;/g, "'")}
                 </p>
                 <p className="text-sm text-gray-600">
                     {video.snippet.description.substring(0, 100)}...
