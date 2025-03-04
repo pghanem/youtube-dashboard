@@ -1,4 +1,6 @@
 // Necessary for Vercel to find the YT namespace
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 declare namespace YT {
 	interface Player {
 		cueVideoById: (videoId: string) => void;
@@ -30,6 +32,14 @@ declare namespace YT {
 			showinfo?: 0 | 1;
 			start?: number;
 			end?: number;
+		};
+		events?: {
+			onReady?: (event: any) => void;
+			onStateChange?: (event: OnStateChangeEvent) => void;
+			onPlaybackQualityChange?: (event: any) => void;
+			onPlaybackRateChange?: (event: any) => void;
+			onError?: (event: any) => void;
+			onApiChange?: (event: any) => void;
 		};
 	}
 
